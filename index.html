@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShopFlow Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+  <!-- Navbar -->
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto flex justify-between items-center p-4">
+      <h1 class="text-2xl font-bold">ShopFlow</h1>
+      <nav class="flex gap-6">
+        <button onclick="showPage('home')" class="hover:text-blue-600">Home</button>
+        <button onclick="showPage('shop')" class="hover:text-blue-600">Shop</button>
+        <button onclick="showPage('cart')" class="hover:text-blue-600">
+          Cart (<span id="cart-count">0</span>)
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Pages -->
+  <main class="max-w-7xl mx-auto px-6">
+
+    <!-- Home -->
+    <section id="home" class="py-20 text-center">
+      <h2 class="text-4xl font-bold mb-4">Welcome to ShopFlow</h2>
+      <p class="mb-6">Find the best fashion and accessories at amazing prices</p>
+      <button onclick="showPage('shop')" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+        Shop Now
+      </button>
+    </section>
+
+    <!-- Shop -->
+    <section id="shop" class="py-10 hidden">
+      <h2 class="text-3xl font-bold mb-6">Our Products</h2>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8" id="shop-grid"></div>
+    </section>
+
+    <!-- Product -->
+    <section id="product" class="py-10 hidden">
+      <div id="product-container"></div>
+    </section>
+
+    <!-- Cart -->
+    <section id="cart" class="py-10 hidden">
+      <h2 class="text-2xl font-bold mb-6">Your Cart</h2>
+      <div id="cart-items" class="space-y-4"></div>
+      <div class="mt-8 flex justify-between items-center">
+        <span id="cart-total" class="text-xl font-semibold"></span>
+        <button class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">Checkout</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Demo product data
+    const products = [
+      {id: 1, name: "Sneakers", price: 120, img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600", desc: "Comfortable and stylish sneakers."},
+      {id: 2, name: "Hoodie", price: 60, img: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=600", desc: "Warm and cozy hoodie."},
+      {id: 3, name: "Cap", price: 25, img: "https://images.unsplash.com/photo-1606813907291-25c62a77b4ab?w=600", desc: "Cool and trendy cap."}
+    ];
+
+    // Show/hide pages
+    function showPage(page, productId=null){
+      document.querySelectorAll("main section").forEach(sec => sec.classList.add("hidden"));
+      document.getElementById(page).classList.remove("hidden");
+
+      if(page === "shop") renderShop();
+      if(page === "product" && productId) renderProduct(productId);
+      if(page === "cart") loadCart();
+    }
+
+    // Render Shop
+    function renderShop(){
+      const grid = document.getElementById("shop-grid");
+      grid.innerHTML = products.map(p => `
+        <div class="bg-white shadow rounded-lg p-4 hover:shadow-lg">
+          <img src="${p.img}" class="w-full h-56 object-cover rounded">
+          <h3 class="mt-4 font-semibold">${p.name}</h3>
+          <p class="text-gray-600">$${p.price}</p>
+          <button onclick="showPage('product', ${p.id})" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">View</button>
+        </div>
+      `).join("");
+    }
+
+    // Render Product
+    function renderProduct(id){
+      const p = products.find(x => x.id === id);
+      const c = document.getElementById("product-container");
+      c.innerHTML = `
+        <div class="bg-white shadow rounded-lg p-6 grid md:grid-cols-2 gap-8">
+          <img src="${p.img}" class="w-full h-80 object-cover rounded">
+          <div>
+            <h2 class="text-3xl font-bold mb-2">${p.name}</h2>
+            <p class="text-gray-600 mb-4">${p.desc}</p>
+            <p class="text-2xl font-semibold mb-6">$${p.price}</p>
+            <button onclick="addToCart(${p.id})" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">Add to Cart</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Cart Functions
+    function addToCart(id){
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const item = products.find(p => p.id === id);
+      const existing = cart.find(p => p.id === id);
+      if(existing){ existing.qty += 1; } else { cart.push({...item, qty: 1}); }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      updateCartCount();
+      alert("Added to cart!");
+    }
+
+    function loadCart(){
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const container = document.getElementById("cart-items");
+      const totalEl = document.getElementById("cart-total");
+      if(cart.length === 0){
+        container.innerHTML = "<p class='text-gray-600'>Your cart is empty.</p>";
+        totalEl.textContent = "";
+        return;
+      }
+      let total = 0;
+      container.innerHTML = cart.map(item => {
+        total += item.price * item.qty;
+        return `
+          <div class="flex justify-between items-center bg-white p-4 shadow rounded-lg">
+            <div class="flex items-center gap-4">
+              <img src="${item.img}" class="w-20 h-20 object-cover rounded">
+              <div>
+                <h3 class="font-semibold">${item.name}</h3>
+                <p>$${item.price} x ${item.qty}</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="updateQty(${item.id}, -1)" class="px-3 py-1 bg-gray-200 rounded">-</button>
+              <button onclick="updateQty(${item.id}, 1)" class="px-3 py-1 bg-gray-200 rounded">+</button>
+              <button onclick="removeItem(${item.id})" class="px-3 py-1 bg-red-500 text-white rounded">Remove</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      totalEl.textContent = "Total: $" + total;
+    }
+
+    function updateQty(id, change){
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const item = cart.find(p => p.id === id);
+      if(item){
+        item.qty += change;
+        if(item.qty <= 0){ cart = cart.filter(p => p.id !== id); }
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      updateCartCount();
+      loadCart();
+    }
+
+    function removeItem(id){
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      cart = cart.filter(p => p.id !== id);
+      localStorage.setItem("cart", JSON.stringify(cart));
+      updateCartCount();
+      loadCart();
+    }
+
+    function updateCartCount(){
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const count = cart.reduce((a, c) => a + c.qty, 0);
+      document.getElementById("cart-count").textContent = count;
+    }
+
+    // Init
+    updateCartCount();
+    showPage("home");
+  </script>
+</body>
+</html>
